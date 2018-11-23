@@ -75,14 +75,15 @@ int main(int argc, char** argv) {
 		buffer = (unsigned char*) mapData;
 //		cout << "printing map" << endl;
 
-
-		connection = read(mySocket, buffer, dataSize);
+	while((connection = read(mySocket, buffer, dataSize)) != -1) {
 		if(connection == -1 || connection < 0) {
 			cerr << "**Error: could not read text size" << endl;
 			return 1;
 		}
 
 		cout << mapData;
+	}
+
 
 	}
 
