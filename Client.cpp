@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	cout << "Successfull Connected to " << myConnection->name << endl;
+	cout << "Successfully Connected to " << myConnection->name << endl;
 	char* mapData = NULL;
 	string command = "command> ";
 	size_t dataSize = 0;
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		cout << "	--DATA SIZE: " << dataSize << endl;
+//		cout << "	--DATA SIZE: " << dataSize << endl;
 //		cout << "We read: " << connection << endl;
 
 		mapData = (char*)malloc(dataSize);
@@ -80,8 +80,10 @@ int main(int argc, char** argv) {
 			cerr << "**Error: could not read text size" << endl;
 			return 1;
 		}
+		cout << buffer;
 
-		cout << mapData;
+		free(buffer);
+		buffer = NULL;
 	}
 
 
@@ -131,7 +133,6 @@ int serverConnection::readPortFile(const string& fileName) {
 		cerr << "**Error: could not read port number";
 		return -1;
 	}
-	//read length of host ** outputting 10000, still starting at beginning
 	toRead = 8;
 	buffer = (unsigned char*) &this->hostLength;
 	readResult = safeRead(fd, buffer, toRead);
@@ -155,5 +156,5 @@ int serverConnection::readPortFile(const string& fileName) {
 	}
 
 
-	return readResult; //** Change later
+	return readResult;
 }
