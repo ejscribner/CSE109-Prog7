@@ -14,11 +14,17 @@ Program #7
 
 
 using namespace std;
-
+//int readPortFile(const string& fileName);
 int main(int argc, char** argv) {
+	serverConnection* myConnection = new serverConnection();
 	cout << "Program Starting" << endl;
-	int result = readPortFile("connection.txt");
+	int result = myConnection->readPortFile("connection.txt");
 	cout << "file read: " <<  result << endl;
+
+	cout << "Port: " << myConnection->port << endl;
+	cout << "Host Length: " << myConnection->hostLength << endl;
+	cout << "Host Name: " << myConnection->name << endl;
+
 	return 0;
 }
 
@@ -39,21 +45,28 @@ int safeRead(int fd, unsigned char* buffer, int toRead)
 	return haveRead;
 }
 
-int readPortFile(const string& fileName) {
+serverConnection::serverConnection()
+: port(0), hostLength(0)
+{
+	this->name = NULL;
+	this->name = (char*) malloc((hostLength + 1) * sizeof(char));
+}
+
+int serverConnection::readPortFile(const string& fileName) {
 	int fd = open(fileName.c_str(), O_RDONLY);
 	if(fd == -1) {
 		cerr << "**Error: could not open file" << endl;
 		return -1;
 	}
 	ssize_t toRead = 2;
-	short port = 0;
-	unsigned char* buffer = (unsigned char*) &port;
+//	myConnection->port = 0;
+	unsigned char* buffer = (unsigned char*) &this->port;
 
 	ssize_t readResult = 0;
 	readResult = safeRead(fd, buffer, toRead);
 //	cout << "Have Read: " << haveRead << endl;
-	cout << "Port: " << port << endl;
-	cout << "Bytes Read: " << readResult << endl;
+//	cout << "Port: " << this->port << endl;
+//	cout << "Bytes Read: " << readResult << endl;
 
 	if(readResult < toRead) {
 		cerr << "**Error: could not read port number";
@@ -61,12 +74,11 @@ int readPortFile(const string& fileName) {
 	}
 	//read length of host ** outputting 10000, still starting at beginning
 	toRead = 8;
-	size_t hostLength = 0;
-	buffer = (unsigned char*) &hostLength;
+	buffer = (unsigned char*) &this->hostLength;
 	readResult = safeRead(fd, buffer, toRead);
 //	cout << "Have Read: " << haveRead << endl;
-	cout << "Host Length: " << hostLength << endl;
-	cout << "Bytes Read: " << readResult << endl;
+//	cout << "Host Length: " << hostLength << endl;
+//	cout << "Bytes Read: " << readResult << endl;
 
 	if(readResult < toRead) {
 		close(fd);
@@ -76,12 +88,11 @@ int readPortFile(const string& fileName) {
 
 	//read hostname
 	toRead = hostLength;
-	char* name = NULL;
-	name = (char*) malloc((hostLength + 1) * sizeof(char));
-	buffer = (unsigned char*) name;
+
+	buffer = (unsigned char*) this->name;
 	readResult = safeRead(fd, buffer, toRead);
-	cout << "Host Name: " << name << endl;
-	cout << "Bytes Read: " << readResult << endl;
+//	cout << "Host Name: " << name << endl;
+//	cout << "Bytes Read: " << readResult << endl;
 
 	if(readResult < toRead) {
 		close(fd);

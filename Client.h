@@ -29,13 +29,21 @@ Program #7
 using namespace std;
 
 
-class client {
+int safeRead(int fd, unsigned char* buffer, int toRead);
+
+class serverConnection {
 public:
+	//Default constructor
+	serverConnection();
+	//Destructor
+	~serverConnection();
+
 	int readPortFile(const string& fileName);
-	int safeRead(int fd, unsigned char* buffer, int toRead);
 
-
-
+	//Member data
+	short port;
+	size_t hostLength;
+	char* name;
 private:
 
 };
