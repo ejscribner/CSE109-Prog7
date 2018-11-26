@@ -14,6 +14,7 @@ Program #7
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netdb.h>
+#include <stdint.h>
 #include "Client.h"
 
 using namespace std;
@@ -57,37 +58,18 @@ int main(int argc, char** argv) {
 	}
 
 	cout << "Successfully Connected to " << myConnection->name << endl;
-	char* mapData = NULL;
-	string command = "command> ";
-	size_t dataSize = 0;
-	while(mapData != command.c_str()) {
-		unsigned char* buffer = (unsigned char*) &dataSize;
-		connection = read(mySocket, buffer, 8);
-		if(connection == -1 || connection < 0) {
-			cerr << "**Error: could not read text size" << endl;
-			return 1;
-		}
 
-//		cout << "	--DATA SIZE: " << dataSize << endl;
-//		cout << "We read: " << connection << endl;
+	printMap(connection, mySocket); //needs command> still
 
-		mapData = (char*)malloc(dataSize);
-		buffer = (unsigned char*) mapData;
-//		cout << "printing map" << endl;
-
-	while((connection = read(mySocket, buffer, dataSize)) != -1) {
-		if(connection == -1 || connection < 0) {
-			cerr << "**Error: could not read text size" << endl;
-			return 1;
-		}
-		cout << buffer;
-
-		free(buffer);
-		buffer = NULL;
-	}
+	string f;
+	cin >> f;
+	cout << f << endl;
+	cout << "hi" << endl;
+	printMap2(connection, mySocket);
 
 
-	}
+
+
 
 
 	return 0;
@@ -158,3 +140,147 @@ int serverConnection::readPortFile(const string& fileName) {
 
 	return readResult;
 }
+
+
+int readAll(int socket, void* buffer, size_t buffLength) {
+	unsigned char* pbuff = reinterpret_cast<unsigned char*>(buffer);
+	while(buffLength > 0) {
+		int numRead = read(socket, pbuff, buffLength);
+		if(numRead < 0) {
+			return -1;
+		}
+		if(numRead == 0) {
+			return 0; //figure out error case return ##s
+		}
+		pbuff += numRead;
+		buffLength -= numRead;
+	}
+	return 1;
+}
+int readAll2(int socket, void* buffer, size_t buffLength) {
+	unsigned char* pbuff = reinterpret_cast<unsigned char*>(buffer);
+	while(buffLength > 0) {
+		int numRead = read(socket, pbuff, buffLength);//hangup
+		if(numRead < 0) {
+			return -1;
+		}
+		if(numRead == 0) {
+			return 0; //figure out error case return ##s
+		}
+		pbuff += numRead;
+		buffLength -= numRead;
+	}
+	return 1;
+}
+
+int printMap(int connection, int mySocket) {
+	char* mapData = NULL;
+	uint64_t dataSize = 0; //change type??
+	const string command = "command> ";
+	bool keepLooping = true;
+
+	do{
+		if(readAll(mySocket, &dataSize, sizeof(dataSize)) <= 0) { //using sizeof(dataSize)?
+			cerr << "**Error: could not read text size" << endl;
+			return 1;
+		}
+
+		if(dataSize == 0) {
+			continue;
+		}
+
+		mapData = new char[dataSize];
+
+		if(readAll(mySocket, mapData, dataSize) <= 0) {
+			cerr << "**Error: could not read test" << endl;
+			delete[] mapData;
+			return 1;
+		}
+
+		cout.write(mapData, dataSize);
+		keepLooping = (dataSize != command.size()) || (strncmp(mapData, command.c_str(), command.size()) != 0);
+
+		delete[] mapData;
+
+	} while(keepLooping);
+	return 0;
+}
+
+int printMap2(int connection, int mySocket) {
+	char* mapData = NULL;
+	size_t dataSize = 0; //change type??
+	const string command = "command> ";
+	bool keepLooping = true;
+
+	do{
+
+		//read size?
+		int res = readAll2(mySocket, &dataSize, sizeof(size_t));
+		cout << "res: " << res << endl;
+		if(res <= 0) { //using sizeof(dataSize)?
+			cerr << "**Error: could not read text size" << endl;
+			return 1;
+		}
+
+		cout << "here " << endl;
+
+		if(dataSize == 0) {
+			continue;
+		}
+
+		mapData = new char[dataSize];
+		//read data?
+		if(readAll2(mySocket, mapData, dataSize) <= 0) {
+			cerr << "**Error: could not read test" << endl;
+			delete[] mapData;
+			return 1;
+		}
+
+		cout.write(mapData, dataSize);
+		keepLooping = (dataSize != command.size()) || (strncmp(mapData, command.c_str(), command.size()) != 0);
+
+		delete[] mapData;
+
+	} while(keepLooping);
+	return 0;
+}
+
+
+//int printMap(int connection, int mySocket) {
+//	char* mapData = NULL;
+//	string command = "command> ";
+//	size_t dataSize = 0;
+//	while(mapData != command.c_str()) {
+////		cout << "	##DATA SIZE: " << dataSize << endl;
+//		unsigned char* buffer = (unsigned char*) &dataSize;
+//		connection = read(mySocket, buffer, 8);
+//		if(connection == -1 || connection < 0) {
+//			cerr << "**Error: could not read text size" << endl;
+//			return 1;
+//		}
+//
+//
+//		cout << "	--DATA SIZE: " << dataSize << endl;
+////		cout << "We read: " << connection << endl;
+//
+//		mapData = (char*)malloc(dataSize);
+//		memset(mapData, 0, dataSize);
+//		buffer = (unsigned char*) mapData;
+////		cout << "printing map" << endl;
+//
+//		while((connection = read(mySocket, buffer, dataSize)) != -1) {
+//			if(connection == -1 || connection < 0) {
+//				cerr << "**Error: could not read text size" << endl;
+//				return 1;
+//			}
+//			if(dataSize != 1) {
+//				cout << buffer;
+//			}
+////			memset(&mapData, 0, dataSize);
+//			free(buffer);
+//			buffer = NULL;
+//		}
+//	}
+//	return 0;
+//}
+

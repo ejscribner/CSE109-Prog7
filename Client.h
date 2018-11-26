@@ -30,6 +30,12 @@ using namespace std;
 
 
 int safeRead(int fd, unsigned char* buffer, int toRead);
+int printMap(int, int);
+int printMap2(int, int);
+int readAll(int socket, void* buffer, size_t buffLength);
+int readAll2(int socket, void* buffer, size_t buffLength);
+
+int readAll(int sock, void *buffer, size_t buflen);
 
 class serverConnection {
 public:
