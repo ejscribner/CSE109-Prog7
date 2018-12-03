@@ -75,6 +75,9 @@ int main(int argc, char** argv) {
 	map = printMap(connection, mySocket);
 	cout <<  map << endl;
 
+
+	//can be used for user input
+
 	while(true) {
 		string myInput;
 		cin >> myInput;
