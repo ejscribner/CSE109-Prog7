@@ -30,12 +30,15 @@ using namespace std;
 
 
 int safeRead(int fd, unsigned char* buffer, int toRead);
-int printMap(int, int);
+string printMap(int, int);
 int printMap2(int, int);
 int readAll(int socket, void* buffer, size_t buffLength);
 int readAll2(int socket, void* buffer, size_t buffLength);
-
-int readAll(int sock, void *buffer, size_t buflen);
+void write_to_server(char *message, int mySocket);
+int safeWrite(int fd, const unsigned char* buffer, int toWrite);
+char turnRight(char direction);
+char turnLeft(char direction);
+void move(string s, char* command, size_t commandLength, unsigned char* buffer, int mySocket, string map, int connection);
 
 class serverConnection {
 public:

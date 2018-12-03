@@ -15,6 +15,8 @@ Program #7
 #include <netinet/ip.h>
 #include <netdb.h>
 #include <stdint.h>
+#include <vector>
+#include <string>
 #include "Client.h"
 
 using namespace std;
@@ -59,20 +61,88 @@ int main(int argc, char** argv) {
 
 	cout << "Successfully Connected to " << myConnection->name << endl;
 
-	printMap(connection, mySocket); //needs command> still
+	string map = printMap(connection, mySocket);
+	char* command = (char*)malloc(64);//what size should this be?
+	//loading
+	sprintf(command, "L %d %d %d", 10,10,10);
+	size_t commandLength = strlen(command);
+	unsigned char* buffer = (unsigned char*)&commandLength;
 
-	string f;
-	cin >> f;
-	cout << f << endl;
-	cout << "hi" << endl;
-	printMap2(connection, mySocket);
+	safeWrite(mySocket, buffer, 8);
+	buffer = (unsigned char*)command;
+	safeWrite(mySocket, buffer, commandLength);
+
+	map = printMap(connection, mySocket);
+	cout <<  map << endl;
+
+	while(true) {
+		string myInput;
+		cin >> myInput;
+		move(myInput, command, commandLength, buffer, mySocket, map, connection);
+	}
 
 
 
+	bool running = true;
+	char direction = 'E';
+	while(running) {
+		direction = turnLeft(direction);
+		vector<char> possDirections = vector<char>(4);
+		ssize_t parseIndex;
+		parseIndex = map.find("You can go ");
+		while (parseIndex != -1) {
+			char parseDirection = map[parseIndex+12];
+			parseIndex+=12;
+			possDirections.push_back(parseDirection);
+			cout << "possible direction: " << parseDirection << endl;
+			parseIndex = map.find("You can go ", parseIndex);
+		}
+		running = false;
 
-
+	}
 
 	return 0;
+}
+
+void move(string s, char* command, size_t commandLength, unsigned char* buffer, int mySocket, string map, int connection) {
+	sprintf(command, "%s", s.c_str());
+	commandLength = strlen(command);
+	buffer = (unsigned char*)&commandLength;
+
+	safeWrite(mySocket, buffer, 8);
+	buffer = (unsigned char*)command;
+	safeWrite(mySocket, buffer, commandLength);
+
+	map = printMap(connection, mySocket);
+	cout <<  map << endl;
+}
+
+char turnLeft(char direction) {
+	if(direction == 'N') {
+		return 'W';
+	} else if(direction == 'E') {
+		return 'N';
+	} else if(direction == 'S') {
+		return 'E';
+	} else if(direction == 'W') {
+		return 'S';
+	} else {
+		return 'Z';
+	}
+}
+
+char turnRight(char direction) {
+	if(direction == 'N') {
+		return 'E';
+	} else if(direction == 'E') {
+		return 'S';
+	} else if(direction == 'S') {
+		return 'W';
+	} else if(direction == 'W') {
+		return 'N';
+	} else {
+		return 'Z';
+	}
 }
 
 
@@ -90,6 +160,23 @@ int safeRead(int fd, unsigned char* buffer, int toRead)
 		}
 	}
 	return haveRead;
+}
+
+int safeWrite(int fd, const unsigned char* buffer, int toWrite)
+{
+	ssize_t writeResult = 0;
+	ssize_t haveWritten = 0;
+	while ((writeResult = write(fd, buffer + haveWritten, toWrite)) != -1)
+	{
+		haveWritten += writeResult;
+		toWrite -= writeResult;
+		if (toWrite == 0)
+		{
+			break;
+		}
+	}
+
+	return haveWritten;
 }
 
 serverConnection::serverConnection()
@@ -158,9 +245,16 @@ int readAll(int socket, void* buffer, size_t buffLength) {
 	return 1;
 }
 int readAll2(int socket, void* buffer, size_t buffLength) {
+	cout << "1" << endl;
 	unsigned char* pbuff = reinterpret_cast<unsigned char*>(buffer);
+	cout << "2" << endl;
 	while(buffLength > 0) {
-		int numRead = read(socket, pbuff, buffLength);//hangup
+		cout << "3" << endl;
+		cout << "	--socket: " << socket << endl;
+		cout << "	--pbuff: " << pbuff << endl;
+		cout << "	--buffLength: " << buffLength<< endl;
+		int numRead = read(socket, pbuff, buffLength);//hangup on call w/ buffLength 8?
+		cout << "4" << endl;
 		if(numRead < 0) {
 			return -1;
 		}
@@ -173,38 +267,40 @@ int readAll2(int socket, void* buffer, size_t buffLength) {
 	return 1;
 }
 
-int printMap(int connection, int mySocket) {
+string printMap(int connection, int mySocket) {
 	char* mapData = NULL;
-	uint64_t dataSize = 0; //change type??
+	size_t dataSize = 0; //change type??
 	const string command = "command> ";
 	bool keepLooping = true;
-
+	string map = "";
 	do{
 		if(readAll(mySocket, &dataSize, sizeof(dataSize)) <= 0) { //using sizeof(dataSize)?
 			cerr << "**Error: could not read text size" << endl;
-			return 1;
+			return NULL;
 		}
 
 		if(dataSize == 0) {
 			continue;
 		}
 
-		mapData = new char[dataSize];
+		mapData = (char*)malloc(dataSize+1);
 
 		if(readAll(mySocket, mapData, dataSize) <= 0) {
 			cerr << "**Error: could not read test" << endl;
-			delete[] mapData;
-			return 1;
+			return NULL;
 		}
-
-		cout.write(mapData, dataSize);
+		mapData[dataSize] = '\0';
+		//cout.write(mapData, dataSize);
 		keepLooping = (dataSize != command.size()) || (strncmp(mapData, command.c_str(), command.size()) != 0);
-
-		delete[] mapData;
+		map += mapData;
+		free(mapData);
 
 	} while(keepLooping);
-	return 0;
+	//cout << flush
+	return map;
 }
+
+
 
 int printMap2(int connection, int mySocket) {
 	char* mapData = NULL;
@@ -231,7 +327,7 @@ int printMap2(int connection, int mySocket) {
 		mapData = new char[dataSize];
 		//read data?
 		if(readAll2(mySocket, mapData, dataSize) <= 0) {
-			cerr << "**Error: could not read test" << endl;
+			cerr << "**Error: could not read text" << endl;
 			delete[] mapData;
 			return 1;
 		}
@@ -242,6 +338,7 @@ int printMap2(int connection, int mySocket) {
 		delete[] mapData;
 
 	} while(keepLooping);
+	cout << flush;
 	return 0;
 }
 
